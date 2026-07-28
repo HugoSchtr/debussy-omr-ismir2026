@@ -1,5 +1,8 @@
 # The Debussy Dataset -- Replication Code
 
+📄 **Paper**: "The Debussy Dataset: Evaluating Optical Music Recognition on Modern Staff Notation Manuscripts" (ISMIR 2026) — *proceedings link to be added*
+🎼 **Dataset** (CC-BY-4.0): [full-page](https://huggingface.co/datasets/HugoSchtr/debussy-omr-fullpage-lvl) · [system-level](https://huggingface.co/datasets/HugoSchtr/debussy-omr-system-lvl)
+
 Replication code for **"The Debussy Dataset: Evaluating Optical Music
 Recognition on Modern Staff Notation Manuscripts"** (ISMIR 2026). This
 repository contains the code needed to reproduce Tables 4, 5, and 6 of the
