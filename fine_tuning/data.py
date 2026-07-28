@@ -515,6 +515,7 @@ def build_kern_vocab_from_samples(
     samples,
     w2i: Dict[str, int] = None,
     decompose: bool = False,
+    use_kernpy: bool = False,
 ) -> Tuple[Dict[str, int], Dict[int, str]]:
     """Build w2i/i2w by converting all MusicXML samples to kern and collecting tokens.
 
@@ -533,7 +534,14 @@ def build_kern_vocab_from_samples(
         kern = musicxml_to_kern(mxml_path)
         if kern is None:
             continue
-        token_str = kern_to_token_string(kern, w2i=w2i, decompose=decompose)
+        if use_kernpy:
+            from bekern_kernpy import krn_to_bekern_tokens
+            try:
+                token_str = krn_to_bekern_tokens(kern)
+            except Exception:
+                continue
+        else:
+            token_str = kern_to_token_string(kern, w2i=w2i, decompose=decompose)
         all_tokens.update(token_str.split())
 
     new_w2i: Dict[str, int] = {'<pad>': 0, '<bos>': 1, '<eos>': 2}
@@ -579,6 +587,7 @@ class DebussyKernDataset(Dataset):
         teacher_forcing_error_rate: float = 0.2,
         is_train: bool = True,
         decompose: bool = False,
+        use_kernpy: bool = False,
     ):
         self.w2i = w2i
         self.i2w = i2w
@@ -592,7 +601,8 @@ class DebussyKernDataset(Dataset):
         self.is_train = is_train
         self.vocab_size = len(w2i)
         self.decompose = decompose
-        
+        self.use_kernpy = use_kernpy
+
         # Pre-convert all MusicXML to kern and tokenize
         self.data = []
         self.skipped = 0
@@ -601,8 +611,17 @@ class DebussyKernDataset(Dataset):
             if kern is None:
                 self.skipped += 1
                 continue
-            
-            token_str = kern_to_token_string(kern, w2i=w2i, decompose=decompose)
+
+            # use_kernpy: official PRAIG bekern (kernpy) instead of home-grown decompose_kern_token.
+            if use_kernpy:
+                from bekern_kernpy import krn_to_bekern_tokens
+                try:
+                    token_str = krn_to_bekern_tokens(kern)
+                except Exception:
+                    self.skipped += 1
+                    continue
+            else:
+                token_str = kern_to_token_string(kern, w2i=w2i, decompose=decompose)
             tokens = token_str.split(' ')
             
             # Map tokens to indices, skip unknown tokens

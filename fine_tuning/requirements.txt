@@ -48,3 +48,4 @@ tqdm>=4.65.0
 #   export OLIMPIC_ICDAR24_DIR=/path/to/olimpic-icdar24
 # See ../README.md "Data & Checkpoints" for details.
 # -----------------------------------------------------------------------------
+kernpy  # official PRAIG basic-extended-kern (bekern) tokenizer, for the bekern_track fine-tuning experiment

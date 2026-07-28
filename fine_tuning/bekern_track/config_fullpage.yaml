@@ -1,0 +1,49 @@
+# Full-page bekern fine-tuning — PRAIG/smt-fp-grandstaff (181-token DECOMPOSED kern).
+# Launched 2026-07-25 to test whether decomposed (bekern) encoding rescues the kern track
+# (compound smt-grandstaff gave 63.55%; bekern collapses Debussy vocab 8598->162 types, LMX-like).
+# Pipeline auto-detects decomposed kern from the 181-token vocab -> kern_to_token_string(decompose=True).
+# Derived from archive/legacy_configs_and_scripts/config_kfold_fp_kern_hf.yaml; only the stale
+# dataset path, checkpoint/results dirs, and wandb run name changed.
+
+model_name: "PRAIG/smt-fp-grandstaff"
+extend_vocab: true           # add the 37 Debussy bekern tokens (LMX-comparable, no OOV penalty; trivial vs compound 2298)
+use_kernpy: true            # OFFICIAL kernpy basicExtendedKern (not home-grown decompose_kern_token)
+
+n_folds: 5
+
+data:
+  dataset_dir: "./datasets/debussy/paired_by_document_layout"
+  flat_structure: true       # doc_id/file.{jpg,musicxml} (no page/ subfolder)
+  target_height: 2560        # full-page resolution
+  max_width: 2048            # model pretrained with maxw=2100
+  max_seq_len: 4353          # model pretrained maxlen
+  binarize: true
+  block_size: 35
+  C: 10
+  batch_size: 1              # full-page images are large
+  num_workers: 4
+  teacher_forcing_error_rate: 0.2
+  val_ratio: 0.15
+  seed: 42
+  exclude_documents:         # kept from the archived config (6 full-page-problematic docs)
+    - "12148_btv1b10865956m"
+    - "12148_btv1b55007986h"
+    - "12148_btv1b55007993k"
+    - "12148_btv1b55007998t"
+    - "12148_btv1b108603911"
+    - "12148_btv1b108604041"
+
+training:
+  lr: 5e-5
+  weight_decay: 1e-4
+  label_smoothing: 0.1
+  max_epochs: 500
+  val_every_n_epoch: 10
+  patience: 10
+  min_delta: 0.5
+  precision: "32-true"       # fp model NaNs in fp16 AND bf16 mixed; fp32 forward verified stable
+  gradient_clip_val: 1.0
+  accumulate_grad_batches: 8   # effective batch = 1 x 8
+  checkpoint_dir: "./checkpoints/bekern_fullpage"
+  wandb_project: "smt-kern"
+  wandb_run_name: "debussy-fp-bekern-kfold"

@@ -1,0 +1,61 @@
+# Experiment 1 (Kern track) — main k-fold Debussy fine-tune.
+# Forked from ../config_kfold_kern_hf.yaml. See ../README.md for how to launch and where results
+# land. Mirrors debussy_experiment/configs/config_main_kfold.yaml (the LMX track) exactly in
+# structure -- only the model/format differs.
+
+# Loaded directly from HuggingFace -- unlike the LMX track, there's no local-checkpoint
+# moving-target risk here (PRAIG/smt-grandstaff is a fixed, versioned HF release).
+model_name: "PRAIG/smt-fp-grandstaff"
+
+# The HF Kern vocab is ~20K compound tokens and already covers virtually all of Debussy's
+# features, so extend_vocab=false would be the more conservative choice -- but kept true so any
+# Debussy-specific kern tokens get their own (random-init) embedding instead of being dropped.
+# NOTE: verified this actually adds 1,615 new tokens for the real 561-sample Debussy corpus (vs
+# only 30 for the LMX track) -- a much worse vocab-inflation problem, since compound tokenization
+# means any new duration+pitch+accidental+tie combination becomes a wholly new token. See
+# ../README.md "Vocab inflation" for the full finding, including that none of those 1,615 new
+# tokens appear to represent articulations/ornaments/techniques at all (unlike LMX's 30).
+extend_vocab: true
+use_kernpy: true            # OFFICIAL kernpy basicExtendedKern (not home-grown decompose_kern_token)
+
+compute_tedn: true
+
+n_folds: 5
+
+data:
+  dataset_dir: "./datasets/debussy/paired_system_level"
+  target_height: 256
+  max_width: 2048            # fp model PE grid maxes ~2048; system crops must be capped (was 3056 -> PE mismatch crash)
+  max_seq_len: 1512
+  binarize: true
+  block_size: 35
+  C: 10
+  batch_size: 4
+  num_workers: 4
+  teacher_forcing_error_rate: 0.2
+  val_ratio: 0.15
+  seed: 42
+  exclude_documents:
+
+training:
+  lr: 5e-5
+  weight_decay: 1e-4
+  label_smoothing: 0.1
+  freeze_encoder_epochs: 50
+  warmup_steps: 100
+  max_epochs: 500
+  val_every_n_epoch: 10
+  patience: 10
+  min_delta: 0.5
+  precision: "32-true"       # fp model NaNs in fp16 AND bf16 mixed; fp32 forward verified stable
+  gradient_clip_val: 1.0
+  accumulate_grad_batches: 2
+  # /scratch, not /home -- see documented 100GB /home quota incident.
+  # SPINE-FIX RETRAIN 2026-07-24: isolated dir so this does NOT clobber the original
+  # checkpoints_main_kfold (which the published 49.99% numbers + pending diagnostic job 5138492
+  # depend on). Only difference vs config_main_kfold.yaml is this dir + the wandb run name — same
+  # recipe, same seed, same folds. Retrains on the CORRECTED kern_to_token_string output (the
+  # spine-split fix), which the live-tokenizing DebussyKernDataset picks up automatically.
+  checkpoint_dir: "./checkpoints/bekern_system"
+  wandb_project: "smt-kern"
+  wandb_run_name: "debussy-fp-oncrops-kfold"

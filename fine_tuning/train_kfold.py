@@ -347,6 +347,7 @@ def run_one_fold(
     )
     if model_format == 'kern':
         common_args['decompose'] = decompose
+        common_args['use_kernpy'] = cfg.get('use_kernpy', False)
 
     train_ds = DatasetClass(
         samples=train_samples,
@@ -545,9 +546,11 @@ def build_folds_and_vocab(cfg: dict, n_folds: int, extend_vocab: bool):
                         f"{' (decomposed)' if decompose else ''}")
 
             if model_format == 'kern':
-                logger.info("Building Kern vocabulary from dataset samples (with articulations)...")
+                use_kernpy = cfg.get('use_kernpy', False)
+                logger.info(f"Building Kern vocabulary from dataset samples "
+                            f"({'official kernpy bekern' if use_kernpy else 'with articulations'})...")
                 ds_w2i, _ = build_kern_vocab_from_samples(
-                    all_samples, w2i=model_w2i, decompose=decompose)
+                    all_samples, w2i=model_w2i, decompose=decompose, use_kernpy=use_kernpy)
             else:
                 logger.info("Building LMX vocabulary from dataset samples...")
                 ds_w2i, _ = build_lmx_vocab_from_samples(all_samples)
@@ -570,6 +573,9 @@ def main():
                         help='Extend model vocab with new tokens from dataset (overrides config)')
     parser.add_argument('--no-extend-vocab', dest='extend_vocab', action='store_false',
                         help='Use only the checkpoint vocab; OOV tokens in dataset are dropped')
+    parser.add_argument('--only-fold', type=int, default=None,
+                        help='Run only this 1-indexed fold (same seed=42 splits); e.g. to re-run a '
+                             'single fold in isolation.')
     args = parser.parse_args()
 
     with open(args.config) as f:
@@ -601,6 +607,8 @@ def main():
     fold_results = []
     fold_manifest = []
     for fold_idx, (train_samples, val_samples, test_samples) in enumerate(folds):
+        if args.only_fold is not None and (fold_idx + 1) != args.only_fold:
+            continue
         result = run_one_fold(
             fold_idx, train_samples, val_samples, test_samples,
             dataset_w2i, dataset_i2w, cfg, n_folds,
