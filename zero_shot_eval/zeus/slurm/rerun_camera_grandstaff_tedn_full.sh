@@ -1,0 +1,39 @@
+#!/bin/bash
+#SBATCH --job-name=ismir_cr_zeus_camgs_tednfull
+#SBATCH --output=/home/hscheith/dev/ISMIR2026/code/zero_shot_eval/zeus/results/slurm_camgs_tednfull_%j.out
+#SBATCH --error=/home/hscheith/dev/ISMIR2026/code/zero_shot_eval/zeus/results/slurm_camgs_tednfull_%j.err
+#SBATCH --time=12:00:00
+#SBATCH --partition=gpu
+#SBATCH --account=inria
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=32G
+#SBATCH --exclude=gpu004,gpu011,gpu012,gpu013,gpu014,gpu015,gpu017,gpu018
+
+# ISMIR camera-ready T1.3 follow-up: TEDn_full for Zeus (Camera-GrandStaff-LMX), corrected
+# binarize=none. Companion to rerun_camera_grandstaff.sh (which got TEDn_lmx); needed because
+# Table 5 has both TEDn_l and TEDn_f columns and we're now updating this row for real.
+set -e
+REPO_DIR="/home/hscheith/dev/olimpic-icdar24/github/olimpic-icdar24"
+CODE_DIR="/home/hscheith/dev/ISMIR2026/code/zero_shot_eval/zeus"
+DATASET="/home/hscheith/dev/smt-finetune/paired_system_level_v2"
+
+export TF_USE_LEGACY_KERAS=1
+export OLIMPIC_ICDAR24_DIR="${REPO_DIR}"
+export PATH="${REPO_DIR}/.venv/bin:${PATH}"
+NVIDIA_DIR=$("${REPO_DIR}/.venv/bin/python3" -c "import nvidia; print(nvidia.__path__[0])" 2>/dev/null || true)
+if [ -n "$NVIDIA_DIR" ]; then
+    export LD_LIBRARY_PATH=$(find "$NVIDIA_DIR" -name "lib" -type d | tr '\n' ':')${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+fi
+LIBCUDA=$(find /usr/lib64 /lib64 /usr/lib -name "libcuda.so.1" 2>/dev/null | head -1)
+if [ -n "$LIBCUDA" ]; then
+    export LD_LIBRARY_PATH="$(dirname "$LIBCUDA"):${LD_LIBRARY_PATH}"
+fi
+nvidia-smi || echo "WARNING: nvidia-smi failed"
+
+"${REPO_DIR}/.venv/bin/python3" "${CODE_DIR}/eval_zeus.py" \
+    --model /scratch/hscheith/olimpic-icdar24/models/zeus-camera-grandstaff-lmx-1.0-2024-02-12.model \
+    --dataset "${DATASET}" \
+    --output "${CODE_DIR}/results/zeus_camera_grandstaff_lmx_tedn_full" \
+    --zeus-script-dir "${REPO_DIR}/zeus" \
+    --compute-tedn --tedn-flavor full

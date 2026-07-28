@@ -1,0 +1,59 @@
+# Kern track -- publicly available pre-trained SMT (PRAIG/smt-grandstaff,
+# **kern vocabulary) fine-tuned on Debussy. Mirrors ../lmx_track/config_main_kfold.yaml
+# exactly in structure and hyperparameters -- only the model/vocabulary differs.
+# See ../README.md for how to launch and ../fold_splits.json for the exact
+# document->fold assignment reproduced by this config's data.seed/val_ratio.
+
+# Loaded directly from HuggingFace -- no local checkpoint needed, unlike the LMX
+# track (PRAIG/smt-grandstaff is a fixed, versioned HF release).
+model_name: "PRAIG/smt-grandstaff"
+
+# The HF Kern vocab is ~20K compound tokens and already covers virtually all of
+# Debussy's features. extend_vocab=true adds any Debussy-specific kern tokens
+# as new (random-init) embeddings instead of dropping them as OOV. Per the paper,
+# this adds 1,615 new tokens for the 561-sample Debussy corpus (vs. only 30 for
+# the LMX track) -- a much larger vocabulary-inflation effect, since compound
+# tokenization means any new duration+pitch+accidental+tie combination becomes a
+# wholly new token.
+extend_vocab: true
+
+# Format-independent TEDn (tree edit distance) eval, test-time only (~8-23s/sample).
+# Requires the olimpic-icdar24 repo (see ../README.md); set to false to skip.
+compute_tedn: true
+
+n_folds: 5
+
+data:
+  # Root of the Debussy paired system-level dataset: dataset_dir/doc_id/page/sample.{jpg,musicxml}
+  # NOTE: must be the SAME dataset_dir/seed/val_ratio as ../lmx_track/config_main_kfold.yaml
+  # so both tracks are evaluated on identical fold assignments (see ../fold_splits.json).
+  dataset_dir: "./datasets/debussy/paired_system_level"
+  target_height: 256
+  max_width: 3056
+  max_seq_len: 1512
+  binarize: true
+  block_size: 35
+  C: 10
+  batch_size: 4
+  num_workers: 4
+  teacher_forcing_error_rate: 0.2
+  val_ratio: 0.15
+  seed: 42
+  exclude_documents:
+
+training:
+  lr: 5e-5
+  weight_decay: 1e-4
+  label_smoothing: 0.1
+  freeze_encoder_epochs: 50
+  warmup_steps: 100
+  max_epochs: 500
+  val_every_n_epoch: 10
+  patience: 10
+  min_delta: 0.5
+  precision: "16-mixed"
+  gradient_clip_val: 1.0
+  accumulate_grad_batches: 2
+  checkpoint_dir: "./checkpoints/kern_track"
+  wandb_project: "smt-kern"
+  wandb_run_name: "debussy-kern-kfold"

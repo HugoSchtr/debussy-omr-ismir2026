@@ -1,0 +1,21 @@
+# Zeus zero-shot evaluation dependencies (TensorFlow environment -- separate
+# from the PyTorch environment used by fine_tuning/ and zero_shot_eval/smt/).
+# Install with: pip install -r requirements.txt
+
+# Zeus itself (zeus.py) -- pinned per the upstream olimpic-icdar24/zeus/requirements.txt
+tensorflow~=2.12.0
+levenshtein
+zss>=1.2.0
+
+# eval_zeus.py's own preprocessing/IO dependencies
+pillow>=10.0.0
+numpy>=1.24.0
+scipy>=1.10.0
+
+# -----------------------------------------------------------------------------
+# NOT pip-installable: the olimpic-icdar24 repository (Mayer et al.), required
+# for the LMX linearizer (Linearizer) and TEDn implementation (TEDn_lmx_xml).
+# Clone it separately and point OLIMPIC_ICDAR24_DIR at it:
+#   git clone https://github.com/ufal/olimpic-icdar24
+#   export OLIMPIC_ICDAR24_DIR=/path/to/olimpic-icdar24
+# -----------------------------------------------------------------------------

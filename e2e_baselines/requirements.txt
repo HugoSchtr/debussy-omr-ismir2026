@@ -1,0 +1,31 @@
+# E2E baselines (FCN/CRNN/CNNT) dependencies -- PyTorch environment, compatible
+# with fine_tuning/ and zero_shot_eval/smt/. Separate from zero_shot_eval/zeus/
+# (TensorFlow). See requirements_cluster.txt for the original repo's full
+# training-time pin set (kept for reference / training reproduction); this file
+# covers what eval_e2e.py itself needs.
+
+torch>=2.0.0
+torchvision>=0.15.0
+opencv-python-headless>=4.8.0
+pillow>=10.0.0
+numpy>=1.24.0
+scipy>=1.10.0          # adaptive/otsu binarization
+music21>=9.1.0         # **kern -> MusicXML conversion
+
+# Only needed for training (main.py), not for eval_e2e.py:
+# lightning>=2.0.0,<2.1.0
+# gin-config>=0.5.0
+# loguru>=0.7.0
+# rich>=13.0.0
+# torchinfo>=1.8.0
+# datasets>=2.14.0
+# wandb>=0.15.0
+# fire>=0.5.0
+
+# -----------------------------------------------------------------------------
+# NOT pip-installable: the olimpic-icdar24 repository (Mayer et al.), required
+# for the LMX linearizer (Linearizer) used by eval_e2e.py. Clone it separately
+# and point OLIMPIC_ICDAR24_DIR at it:
+#   git clone https://github.com/ufal/olimpic-icdar24
+#   export OLIMPIC_ICDAR24_DIR=/path/to/olimpic-icdar24
+# -----------------------------------------------------------------------------

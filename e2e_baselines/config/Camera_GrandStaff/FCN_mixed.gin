@@ -1,0 +1,14 @@
+# Configuration for training with mixed HuggingFace datasets
+# Combines GrandStaff and Camera_GrandStaff while respecting splits
+# Train+Train, Val+Val, Test+Test
+
+# Use mixed datasets from HuggingFace
+main.use_mixed_datasets = True
+main.encoding = "bekrn"
+main.model_name = "FCN"
+main.dataset_names = ["PRAIG/grandstaff", "PRAIG/camera-grandstaff"]
+
+# Mixed dataset configuration
+load_mixed_datasets_from_huggingface.dataset_names = ["PRAIG/grandstaff", "PRAIG/camera-grandstaff"]
+load_mixed_datasets_from_huggingface.corpus_name = "Mixed_GrandStaff_bekrn"
+load_mixed_datasets_from_huggingface.target_height = 256  # Normalise to fixed height before rotation (mirrors local distorted pipeline)

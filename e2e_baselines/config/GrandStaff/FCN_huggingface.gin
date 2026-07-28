@@ -1,0 +1,13 @@
+# Configuration for training with HuggingFace PRAIG/grandstaff dataset
+# This uses the official splits from HuggingFace
+
+# Use HuggingFace dataset instead of local files
+main.use_huggingface = True
+main.encoding = "bekrn"
+main.model_name = "FCN"
+main.dataset_name = "PRAIG/grandstaff"
+
+# HuggingFace dataset configuration
+load_dataset_from_huggingface.dataset_name = "PRAIG/grandstaff"
+load_dataset_from_huggingface.corpus_name = "GrandStaff_bekrn"
+load_dataset_from_huggingface.resize_ratio = 1.0  # Full size - DO NOT REDUCE or CTC will fail

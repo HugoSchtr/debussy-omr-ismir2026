@@ -1,0 +1,14 @@
+# Configuration for training with HuggingFace PRAIG/camera-grandstaff dataset
+# This uses the official splits from HuggingFace
+
+# Use HuggingFace dataset instead of local files
+main.use_huggingface = True
+main.encoding = "bekrn"
+main.model_name = "CRNN"
+main.dataset_name = "PRAIG/camera-grandstaff"
+load_data.load_distorted = False
+
+# HuggingFace dataset configuration
+load_dataset_from_huggingface.dataset_name = "PRAIG/camera-grandstaff"
+load_dataset_from_huggingface.corpus_name = "Camera_GrandStaff_bekrn"
+load_dataset_from_huggingface.target_height = 256  # Normalise to fixed height before rotation (mirrors local distorted pipeline)

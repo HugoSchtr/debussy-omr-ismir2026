@@ -1,0 +1,50 @@
+# SMT fine-tuning dependencies (PyTorch environment; Python 3.10+ recommended).
+# Install with: pip install -r requirements.txt
+
+# PyTorch (CUDA build recommended for training)
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Transformers (for pretrained SMT model loading via HuggingFace)
+transformers>=4.30.0
+
+# PyTorch Lightning (training loop / trainer)
+lightning>=2.0.0
+
+# Image processing
+pillow>=10.0.0
+opencv-python-headless>=4.8.0
+
+# Music notation (MusicXML -> **kern conversion)
+music21>=9.1.0
+
+# Optional but strongly recommended: primary **kern converter backend used by
+# musicxml_to_kern.py (falls back to music21 automatically if not installed).
+# verovio>=4.0.0
+
+# TEDn evaluation (only needed if compute_tedn: true in a config)
+zss>=1.2.0
+python-Levenshtein>=0.20.0
+
+# Scientific computing
+numpy>=1.24.0
+scipy>=1.10.0
+
+# Configuration
+pyyaml>=6.0
+
+# Experiment tracking / logging
+wandb>=0.15.0
+loguru>=0.7.0
+
+# Progress bars
+tqdm>=4.65.0
+
+# -----------------------------------------------------------------------------
+# NOT pip-installable: the olimpic-icdar24 repository (Mayer et al., LMX
+# linearizer + TEDn implementation), required by data_debussy_lmx.py and
+# tedn_eval.py. Clone it separately and point OLIMPIC_ICDAR24_DIR at it:
+#   git clone https://github.com/ufal/olimpic-icdar24
+#   export OLIMPIC_ICDAR24_DIR=/path/to/olimpic-icdar24
+# See ../README.md "Data & Checkpoints" for details.
+# -----------------------------------------------------------------------------

@@ -1,0 +1,9 @@
+main.train_path = "datasets/grandstaff/partitions/train.txt"
+main.val_path = "datasets/grandstaff/partitions/val.txt"
+main.test_path = "datasets/grandstaff/partitions/test.txt"
+main.encoding = "bekrn"
+main.model_name = "FCN"
+
+load_data.extension = ".bekrn"
+load_data.load_distorted = True
+load_data.resize_ratio = 1.

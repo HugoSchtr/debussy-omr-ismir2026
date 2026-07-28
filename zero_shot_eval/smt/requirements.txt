@@ -1,0 +1,44 @@
+# SMT Evaluation Dependencies
+# Python 3.10+ required
+
+# Core ML/DL frameworks
+torch>=2.0.0
+torchvision>=0.15.0
+transformers>=4.30.0
+
+# Image processing
+pillow>=10.0.0
+
+# Scientific computing (binarization, statistics)
+scipy>=1.10.0
+
+# Music notation processing
+music21>=9.1.0
+
+# Data processing
+numpy>=1.24.0
+pandas>=2.0.0
+
+# Configuration
+pyyaml>=6.0
+
+# Progress tracking
+tqdm>=4.65.0
+
+# TEDn metric (tree edit distance)
+zss>=1.2.0
+Levenshtein>=0.24.0
+
+# Logging
+loguru>=0.7.0
+
+# HuggingFace utilities
+huggingface-hub>=0.16.0
+datasets>=2.14.0
+
+# Optional: Verovio (if use_verovio: true in config)
+# verovio>=4.0.0
+# Note: Verovio can be unstable, install only if needed
+
+# Optional: Better error reporting
+# rich>=13.0.0

@@ -1,0 +1,41 @@
+# Model checkpoints / weights (never commit these)
+*.ckpt
+*.model/
+checkpoints/
+weights/
+*.h5
+
+# Datasets (never commit these)
+datasets/
+olimpic-icdar24/
+
+# Pickled data / intermediate artifacts
+*.pickle
+*.pkl
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Experiment tracking / logs
+wandb/
+logs/
+out/
+results/
+results_fullpage/
+results_optimized/
+
+# Images (except any small figures deliberately kept for documentation under docs/)
+*.png
+*.jpg
+*.jpeg
+!docs/**/*.png
+!docs/**/*.jpg
+
+# Misc
+.DS_Store
+*.log

@@ -1,0 +1,97 @@
+# SMT Cluster Evaluation Configuration
+# Protocol aligned with Zeus evaluation notebook (zeus_eval.ipynb)
+
+# =============================================================================
+# DATASET PATHS
+# =============================================================================
+dataset_base_dir: "."
+# Dataset is in current directory: ./paired_system_level/
+
+# Output directory for results (timestamped subdirs: run_YYYYMMDD_HHMMSS/)
+output_dir: "./results"
+
+# Dedicated logs directory (separate from results)
+logs_dir: "./logs"
+
+
+# =============================================================================
+# MODEL SETTINGS
+# =============================================================================
+model_name: "PRAIG/smt-grandstaff"
+device: "cuda"
+max_seq_len: 8096
+
+
+# =============================================================================
+# EVALUATION SETTINGS
+# =============================================================================
+
+# Test mode (for quick validation)
+test_mode: false
+# Options:
+#   false - Full dataset evaluation
+#   "document" - Single document
+#   "folio" - Single folio
+
+test_document: "12148_btv1b55002573h"
+test_folio: "f9"
+
+# Maximum samples to process (null = all)
+max_samples: null
+
+# Documents to exclude from evaluation (matching notebook protocol)
+exclude_documents:
+   - "12148_btv1b10865956m"
+   - "12148_btv1b55007986h"
+   - "12148_btv1b55007993k"
+   - "12148_btv1b55007998t"
+   - "12148_btv1b108603911"
+   - "12148_btv1b108604041"
+  # Add problematic documents here
+
+
+# =============================================================================
+# IMAGE PREPROCESSING / BINARIZATION
+# =============================================================================
+
+# Binarization method: 'adaptive', 'otsu', 'fixed', or 'none' (raw RGB)
+binarization_method: "adaptive"
+
+# Adaptive thresholding parameters (scipy uniform_filter, matching notebook)
+#   block_size=35, C=10 (notebook default)
+#   Note: old script used block_size=15 via OpenCV -- now corrected
+binarization_block_size: 35
+binarization_C: 10
+
+
+# =============================================================================
+# CONVERSION SETTINGS
+# =============================================================================
+
+# **kern to MusicXML conversion
+use_sanitization: true
+# Enable 3-level sanitization fallback (recommended)
+
+# Path to olimpic-icdar24 repository (for Zeus linearization)
+olimpic_path: "./olimpic-icdar24"
+
+
+# =============================================================================
+# PROCESSING SETTINGS
+# =============================================================================
+
+save_checkpoint_every: 50
+log_level: "INFO"
+
+
+# =============================================================================
+# TEDn EVALUATION
+# =============================================================================
+
+# Enable TEDn (Tree Edit Distance, normalized) metric
+# WARNING: Computationally expensive (~30-120s per sample)
+enable_tedn: true
+
+# Number of parallel workers for TEDn computation
+# Both 'full' and 'lmx' flavors are always computed together
+tedn_workers: 4

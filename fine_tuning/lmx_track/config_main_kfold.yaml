@@ -1,0 +1,64 @@
+# LMX track -- SMT fine-tuned on Debussy, starting from an SMT trained from
+# scratch on GrandStaff LMX (Mayer et al., LMX vocabulary). See ../README.md
+# for how to launch and where results land, and ../fold_splits.json for the
+# exact document->fold assignment reproduced by this config's data.seed/val_ratio.
+#
+# All paths below are placeholders -- edit them for your own environment
+# before running train_kfold.py. See ../README.md "Data & Checkpoints".
+
+# Path to a local Lightning .ckpt of an SMT model pretrained from scratch on
+# GrandStaff LMX (val SER 1.12% per the paper). This checkpoint is NOT
+# distributed with this repo -- either train your own with the OLiMPiC/Zeus
+# LMX pipeline, or substitute a HuggingFace model_name below instead (in which
+# case remove/comment out local_checkpoint).
+local_checkpoint: "./checkpoints/lmx_pretrained/smt-lmx-grandstaff.ckpt"
+
+# true = add new tokens (random-init embeddings) for Debussy-specific classes
+# missing from the GrandStaff-pretrained LMX vocab (30 new tokens, per the paper).
+extend_vocab: true
+
+# Format-independent TEDn (tree edit distance) eval, test-time only (~8-23s/sample).
+# Requires the olimpic-icdar24 repo (see ../README.md); set to false to skip.
+compute_tedn: true
+
+# Used to rebuild the checkpoint's exact token->index mapping when the checkpoint
+# itself doesn't store hyper_parameters. Point this at the GrandStaff dataset root
+# used to pretrain local_checkpoint (needs samples.{train,dev,test}.txt files).
+pretrain_dataset_root: "./datasets/grandstaff"
+
+n_folds: 5
+
+data:
+  # Root of the Debussy paired system-level dataset: dataset_dir/doc_id/page/sample.{jpg,musicxml}
+  dataset_dir: "./datasets/debussy/paired_system_level"
+  target_height: 256
+  max_width: 3056
+  max_seq_len: 1512
+  binarize: true
+  block_size: 35
+  C: 10
+  batch_size: 4
+  num_workers: 4
+  teacher_forcing_error_rate: 0.2
+  val_ratio: 0.15
+  seed: 42
+  exclude_documents:
+
+training:
+  lr: 5e-5
+  weight_decay: 1e-4
+  label_smoothing: 0.1
+  # Catastrophic-forgetting/overfitting guardrails for fine-tuning a full pretrained
+  # encoder+decoder on ~350-400 samples/fold.
+  freeze_encoder_epochs: 50
+  warmup_steps: 100
+  max_epochs: 500
+  val_every_n_epoch: 10
+  patience: 10
+  min_delta: 0.5
+  precision: "16-mixed"
+  gradient_clip_val: 1.0
+  accumulate_grad_batches: 2
+  checkpoint_dir: "./checkpoints/lmx_track"
+  wandb_project: "smt-lmx"
+  wandb_run_name: "debussy-lmx-kfold"

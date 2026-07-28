@@ -1,0 +1,113 @@
+# SMT Full-Page Evaluation Configuration
+
+# =============================================================================
+# DATASET PATHS (REQUIRED - EDIT THESE FOR YOUR CLUSTER)
+# =============================================================================
+dataset_base_dir: "."
+# Dataset is in current directory: ./paired_by_document_layout/
+
+# Output directory for results (timestamped subdirs: run_YYYYMMDD_HHMMSS/)
+output_dir: "./results_fullpage"
+
+# Dedicated logs directory (separate from results)
+logs_dir: "./logs"
+
+
+# =============================================================================
+# DATASET TYPE
+# =============================================================================
+dataset_type: "fullpage"
+# Options: "system" (paired_system_level) or "fullpage" (paired_by_document_layout)
+
+
+# =============================================================================
+# MODEL SETTINGS
+# =============================================================================
+model_name: "PRAIG/smt-fp-grandstaff"
+# HuggingFace full-page model identifier
+
+device: "cuda"
+# Options: "cpu", "cuda", "mps"
+
+# Model prediction settings
+max_seq_len: 8096
+
+
+# =============================================================================
+# EVALUATION SETTINGS
+# =============================================================================
+
+# Test mode (for quick validation)
+test_mode: false
+# Options:
+#   false - Full dataset evaluation
+#   "document" - Single document evaluation
+#   "folio" - Single folio evaluation (note: full-page has 1 image per folio)
+
+test_document: "12148_btv1b55002573h"
+test_folio: "f9"
+# Only used if test_mode is "document" or "folio"
+
+# Maximum samples to process (null = process all)
+max_samples: null
+# Set to a number (e.g., 100) to limit processing for testing
+
+# Documents to exclude from evaluation
+exclude_documents:
+   - "12148_btv1b10865956m"
+   - "12148_btv1b55007986h"
+   - "12148_btv1b55007993k"
+   - "12148_btv1b55007998t"
+   - "12148_btv1b108603911"
+   - "12148_btv1b108604041"
+  # Add problematic document IDs here
+
+
+# =============================================================================
+# IMAGE PREPROCESSING / BINARIZATION
+# =============================================================================
+
+# Binarization method: 'adaptive', 'otsu', 'fixed', or 'none' (raw RGB)
+binarization_method: "adaptive"
+
+# Adaptive thresholding parameters (scipy uniform_filter, matching notebook)
+binarization_block_size: 35
+binarization_C: 10
+
+
+# =============================================================================
+# CONVERSION SETTINGS
+# =============================================================================
+
+# **kern to MusicXML conversion
+use_sanitization: true
+# Enable 3-level sanitization fallback (recommended)
+
+# Path to olimpic-icdar24 repository (for Zeus linearization)
+olimpic_path: "./olimpic-icdar24"
+
+
+# =============================================================================
+# TEDn EVALUATION
+# =============================================================================
+
+# Enable TEDn (Tree Edit Distance, normalized) metric
+# WARNING: Computationally expensive (~30-120s per sample)
+enable_tedn: true
+# Set to true to also compute TEDn metrics
+
+# TEDn flavor: 'full' or 'lmx'
+#   'full' = regular TEDn on all MusicXML content
+#   'lmx'  = prune trees to only LMX-covered concepts (recommended)
+tedn_flavor: "lmx"
+
+# Number of parallel workers for TEDn computation
+tedn_workers: 4
+
+
+# =============================================================================
+# PROCESSING SETTINGS
+# =============================================================================
+
+save_checkpoint_every: 50
+log_level: "INFO"
