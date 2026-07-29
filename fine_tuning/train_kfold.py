@@ -88,7 +88,18 @@ def extract_vocab_from_checkpoint(checkpoint_path):
             w2i = dict(saved_model.w2i)
             i2w = dict(saved_model.i2w)
             return w2i, i2w, len(w2i)
-    
+
+    # Sidecar vocab file (<ckpt>.vocab.json) — for from-scratch checkpoints that
+    # store only a state_dict (no hyper_parameters); lets us recover the exact
+    # token->index mapping so pretrained embeddings stay aligned on fine-tuning.
+    sidecar = Path(str(checkpoint_path) + '.vocab.json')
+    if sidecar.exists():
+        import json
+        d = json.load(open(sidecar))
+        w2i = {k: int(v) for k, v in d['w2i'].items()}
+        i2w = {int(k): v for k, v in d['i2w'].items()}
+        return w2i, i2w, len(w2i)
+
     # Fall back to embedding shape
     for key, value in checkpoint['state_dict'].items():
         if key.endswith('decoder.embedding.weight'):
@@ -206,15 +217,19 @@ def load_model_from_checkpoint_or_pretrained(model_path, max_seq_len=1512, w2i=N
                 old_proj_w = model.decoder.vocab_projection.weight
                 old_proj_b = model.decoder.vocab_projection.bias
                 
-                # New embedding: copy old rows, random-init new ones
+                # New embedding: copy old rows, init new ones to the pretrained-row mean
+                # (deterministic + in-distribution; same reasoning as the HF branch below).
                 new_emb = torch.nn.Embedding(target_vocab_size, d_model, padding_idx=0)
                 new_emb.weight.data[:ckpt_vocab_size] = old_emb.weight.data
+                new_emb.weight.data[ckpt_vocab_size:] = old_emb.weight.data.mean(dim=0, keepdim=True)
                 model.decoder.embedding = new_emb
-                
-                # New projection: copy old rows, random-init new ones
+
+                # New projection: copy old rows, init new ones to the pretrained mean
                 new_proj = torch.nn.Linear(d_model, target_vocab_size)
                 new_proj.weight.data[:ckpt_vocab_size] = old_proj_w.data
                 new_proj.bias.data[:ckpt_vocab_size] = old_proj_b.data
+                new_proj.weight.data[ckpt_vocab_size:] = old_proj_w.data.mean(dim=0, keepdim=True)
+                new_proj.bias.data[ckpt_vocab_size:] = old_proj_b.data.mean()
                 model.decoder.vocab_projection = new_proj
                 
                 model.config.out_categories = target_vocab_size
@@ -243,15 +258,27 @@ def load_model_from_checkpoint_or_pretrained(model_path, max_seq_len=1512, w2i=N
                 old_proj_w = model.decoder.vocab_projection.weight
                 old_proj_b = model.decoder.vocab_projection.bias
 
-                # New embedding: copy pretrained rows, random-init new ones
+                # New embedding: copy pretrained rows, init new ones to the pretrained-row MEAN
+                # (what HF's resize_token_embeddings effectively does). Rationale: the default
+                # nn.Embedding init draws per fold from the global RNG, so new-row values depend
+                # on process position; mean-init is deterministic and in-distribution.
+                # NOTE: this was trialled as a fix for the smt-fp-grandstaff batch-0 NaN and did
+                # NOT fix it (the N(0,1) default is ~the same scale as the trained embeddings:
+                # std 0.94, row-norm ~15 vs ~16 — it was never oversized). Kept because it is
+                # principled and reproducible, not because it cures any NaN. See
+                # BEKERN_KERNPY_CHORD_LOSS_BUG_2026-07-29.md, Finding 2.
                 new_emb = torch.nn.Embedding(target_vocab_size, d_model, padding_idx=0)
                 new_emb.weight.data[:orig_vocab_size] = old_emb.weight.data
+                new_emb.weight.data[orig_vocab_size:] = old_emb.weight.data.mean(dim=0, keepdim=True)
                 model.decoder.embedding = new_emb
 
-                # New projection: copy pretrained rows, random-init new ones
+                # New projection: copy pretrained rows, init new ones to the pretrained mean
+                # (same reasoning — deterministic, small, finite).
                 new_proj = torch.nn.Linear(d_model, target_vocab_size)
                 new_proj.weight.data[:orig_vocab_size] = old_proj_w.data
                 new_proj.bias.data[:orig_vocab_size] = old_proj_b.data
+                new_proj.weight.data[orig_vocab_size:] = old_proj_w.data.mean(dim=0, keepdim=True)
+                new_proj.bias.data[orig_vocab_size:] = old_proj_b.data.mean()
                 model.decoder.vocab_projection = new_proj
 
                 model.config.out_categories = target_vocab_size
@@ -418,6 +445,10 @@ def run_one_fold(
         logger=wandb_logger,
         callbacks=[checkpoint_cb, early_stop_cb],
         log_every_n_steps=1,
+        # cuDNN autotuning over our variable-width crops made the FIRST fold in a
+        # process go all-NaN (later folds reuse the cached, stable algo selections).
+        # Force it off so every fold — including the first — is stable and deterministic.
+        benchmark=False,
     )
 
     # Train
@@ -478,9 +509,17 @@ def build_folds_and_vocab(cfg: dict, n_folds: int, extend_vocab: bool):
         ckpt_w2i, ckpt_i2w, ckpt_vocab_size = extract_vocab_from_checkpoint(local_checkpoint)
         logger.info(f"Checkpoint vocab size: {ckpt_vocab_size}")
         
-        # Build dataset vocab to check for new tokens
-        logger.info("Building LMX vocabulary from target dataset...")
-        dataset_w2i, dataset_i2w = build_lmx_vocab_from_samples(all_samples)
+        # Build dataset vocab to check for new tokens. A kern/bekern checkpoint (use_kernpy)
+        # must build a KERN dataset vocab via kernpy — not LMX — so the token set matches the
+        # checkpoint's; merge_vocabularies below then keeps the checkpoint indices and appends
+        # only the dataset-only kern tokens.
+        if cfg.get('use_kernpy', False):
+            logger.info("Building kern (official kernpy bekern) vocabulary from target dataset...")
+            dataset_w2i, dataset_i2w = build_kern_vocab_from_samples(
+                all_samples, w2i=ckpt_w2i, use_kernpy=True)
+        else:
+            logger.info("Building LMX vocabulary from target dataset...")
+            dataset_w2i, dataset_i2w = build_lmx_vocab_from_samples(all_samples)
         
         if ckpt_w2i is not None:
             if extend_vocab:
@@ -574,8 +613,8 @@ def main():
     parser.add_argument('--no-extend-vocab', dest='extend_vocab', action='store_false',
                         help='Use only the checkpoint vocab; OOV tokens in dataset are dropped')
     parser.add_argument('--only-fold', type=int, default=None,
-                        help='Run only this 1-indexed fold (same seed=42 splits); e.g. to re-run a '
-                             'single fold in isolation.')
+                        help='Run only this 1-indexed fold (same seed=42 splits); for re-running a '
+                             'single fold in isolation, e.g. after a NaN-poisoned fold.')
     args = parser.parse_args()
 
     with open(args.config) as f:

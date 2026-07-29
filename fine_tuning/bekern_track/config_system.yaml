@@ -18,7 +18,7 @@ model_name: "PRAIG/smt-fp-grandstaff"
 extend_vocab: true
 use_kernpy: true            # OFFICIAL kernpy basicExtendedKern (not home-grown decompose_kern_token)
 
-compute_tedn: true
+compute_tedn: true   # NOTE: reads ~100% for bekern regardless of quality -- music21 cannot parse decomposed atoms; ignore this column
 
 n_folds: 5
 
@@ -47,7 +47,8 @@ training:
   val_every_n_epoch: 10
   patience: 10
   min_delta: 0.5
-  precision: "32-true"       # fp model NaNs in fp16 AND bf16 mixed; fp32 forward verified stable
+  precision: "32-true"       # NOT a working recipe: this checkpoint NaNs at epoch 0 / batch 0 in fp32 too.
+                             # See BEKERN.md "Status" -- this track is documented, not reproducible as-is.
   gradient_clip_val: 1.0
   accumulate_grad_batches: 2
   # /scratch, not /home -- see documented 100GB /home quota incident.

@@ -34,6 +34,8 @@ code/
 │   ├── zeus/                # Zeus (3 checkpoints), TensorFlow -- includes a corrected preprocessing policy
 │   └── e2e/                # FCN/CRNN/CNNT, adapted from Ríos-Vila et al.
 └── BEKERN.md               # future work: the decomposed-kern encoding experiment
+                            #   (negative result — the shipped recipe does not converge; read it
+                            #    before running bekern_track/. Does not affect Tables 4/5/6.)
 ```
 
 ## Environments: PyTorch vs. TensorFlow
